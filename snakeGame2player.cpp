@@ -1,3 +1,6 @@
+// compile using g++ snakeGame2player.cpp -lncurses; then run ./a.out on terminal
+// the snake that gets 20 points first wins. If a snake eats itself or touches the boundary before that - the other snake wins.
+
 
 #include <ncurses.h>
 #include <cstdlib>
@@ -7,6 +10,8 @@ bool gameOver;
 const int width = 50, height = 50;
 
 int x, y, fruitX, fruitY, score;
+
+int deb=0; //to debug
 
 int xP1, yP1, scoreP1;
 
@@ -27,7 +32,8 @@ int tailX[maxSnakeLen], tailY[maxSnakeLen]; // this has to be an array and not a
 int tailX1[maxSnakeLen], tailY1[maxSnakeLen]; // this has to be an array and not a len - because he snake can curve
 int nTail = 0;
 int nTail1 = 0;
-
+int scoreToWin = 20; // need 20 points to win
+int loserSnake = 0; // no specific snake lost
 struct retVals {        
     int x, y, nTail;
 };
@@ -53,6 +59,7 @@ void Setup()
 
     gameOver = false;
     dir = STOP;
+    dir1 = STOP;
     x = width / 2;
     y = height / 2;
     xP1 = width / 2;
@@ -66,6 +73,12 @@ void Setup()
     score = 0;
     //init score for player 1
     scoreP1 = 0;
+
+    loserSnake = 0;
+
+    nTail = 0;
+    nTail1 = 0;
+
 
 
      
@@ -187,7 +200,12 @@ void Input()
         break;
     case 113: // user presses q to quit
         gameOver = true;
+        deb = 10;
+
         break;
+    default:
+        // user does nothing
+       break;  
     }
 
 
@@ -235,6 +253,9 @@ retVals * SnakeLogic(int x, int y, int tailX[], int tailY[], int nTail, eDirecti
 
     if (x > width || x < 1 || y > height || y < 1 ) {
         gameOver = true;
+        loserSnake = SNAKE_GREEN;
+        deb = 1;
+
     }
 
     // if you get a fruit
@@ -254,6 +275,9 @@ retVals * SnakeLogic(int x, int y, int tailX[], int tailY[], int nTail, eDirecti
     {
         if (tailX[i] == x && tailY[i] == y) {
             gameOver = true;
+            loserSnake = SNAKE_GREEN;
+            deb = 2;
+
         }
 
     }
@@ -312,6 +336,10 @@ void Logic()
 
     if (x > width || x < 1 || y > height || y < 1 ) {
         gameOver = true;
+        loserSnake = SNAKE_GREEN;
+        deb = 3;
+        return;
+
     }
 
     // if you get a fruit
@@ -326,11 +354,23 @@ void Logic()
 
     }
 
+    // if you reach 20 points (win)
+    if (score >= scoreToWin)
+    {
+        gameOver = true;
+        loserSnake = SNAKE_PINK;
+        return;
+    }
+
     // go through each tail piece and see if it is the same as head - collisiion check
-    for (int i = 0; i < nTail; i++) 
+    for (int i = 1; i < nTail; i++) 
     {
         if (tailX[i] == x && tailY[i] == y) {
             gameOver = true;
+            loserSnake = SNAKE_GREEN;
+            deb = 4;
+            break;
+
         }
 
     }
@@ -374,6 +414,10 @@ void Logic()
 
     if (xP1 > width || xP1 < 1 || yP1 > height || yP1 < 1 ) {
         gameOver = true;
+        loserSnake = SNAKE_PINK;
+        deb = 14;
+        return;
+
     }
 
     // if you get a fruit
@@ -388,11 +432,26 @@ void Logic()
 
     }
 
+    // if you reach 20 points (win)
+    if (scoreP1 >= scoreToWin)
+    {
+        gameOver = true;
+        loserSnake = SNAKE_GREEN;
+        deb = 5;
+        return;
+
+    }
+
+
     // go through each tail piece and see if it is the same as head - collisiion check
-    for (int i = 0; i < nTail1; i++) 
+    for (int i = 1; i < nTail1; i++) 
     {
         if (tailX1[i] == xP1 && tailY1[i] == yP1) {
             gameOver = true;
+            loserSnake = SNAKE_PINK;
+            deb = 6;
+            break;
+
         }
 
     }
@@ -414,23 +473,26 @@ int main()
 
     // clear();
     getch();
-    if (scoreP1 == score) 
+
+    if (scoreP1 >= scoreToWin || loserSnake==SNAKE_GREEN)
     {
+        attron(COLOR_PAIR(SNAKE_PINK));
+        mvprintw(width/2, height/2, "PINK SNAKE WINS!");//scorep1:%d loser snek:%d score2win:%d deb:%d", scoreP1, loserSnake, scoreToWin, deb);
+
+    }
+    else if (score >= scoreToWin || loserSnake==SNAKE_PINK)
+    {
+        attron(COLOR_PAIR(SNAKE_GREEN));
+        mvprintw(width/2, height/2, "GREEN SNAKE WINS!");//scorep:%d loser snek:%d score2win:%d deb:%d", score, loserSnake, scoreToWin, deb);
+    }
+    else { //tie
         attron(COLOR_PAIR(BLUE_BORDER));
         mvprintw(width/2, height/2, "It's a tie!");
     }
-    else if (scoreP1 > score)
-    {
-        attron(COLOR_PAIR(SNAKE_PINK));
-        mvprintw(width/2, height/2, "PINK SNAKE WINS!");
-    }
-    else 
-    {
-        attron(COLOR_PAIR(SNAKE_GREEN));
-        mvprintw(width/2, height/2, "GREEN SNAKE WINS!");
-    }
-    mvprintw(width/2, 3*height/4, "PRESS q TO Quit and n TO PLAY AGAIN!");
-    
+    mvprintw(width/4, height/8, "PRESS q TO Quit and n TO PLAY AGAIN!");
+
+
+    gameOver=false;
     
     bool isEnd = true;
     while (isEnd) {
@@ -439,6 +501,7 @@ int main()
         {
             case 110:
                 isEnd = false;
+                
                 main();
                 break;
                 
@@ -448,9 +511,10 @@ int main()
                 break;
         }
     }
-   
 
-    getch();
+    
+
+    //getch();
 
 
 

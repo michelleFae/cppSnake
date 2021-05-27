@@ -7,6 +7,10 @@ const int width = 20, height = 20;
 
 int x, y, fruitX, fruitY, score;
 
+#define SNAKE_GREEN 1 
+#define RED_FOOD 2
+#define BLUE_BORDER 3
+
 enum eDirection {STOP = 0, LEFT, RIGHT, UP, DOWN};
 eDirection dir;
 
@@ -27,7 +31,13 @@ void Setup()
     cbreak();
     curs_set(0); // hide cursor
 
-    // nTail = 0;
+    if (has_colors() == true) {
+        start_color();
+        init_pair(SNAKE_GREEN, COLOR_GREEN, COLOR_WHITE);
+        init_pair(RED_FOOD, COLOR_RED, COLOR_WHITE);
+        init_pair(BLUE_BORDER, COLOR_BLUE, COLOR_WHITE);
+    }
+
 
     gameOver = false;
     dir = STOP;
@@ -52,23 +62,28 @@ void Draw()
     // board
     for (int i = 0; i < width+2; i++) {
         // 0th a nd 1st arg are cooordinates
+        attron(COLOR_PAIR(BLUE_BORDER));
         mvprintw(0, i, "+");
     }
     for (int i = 0; i < height+2; i++) {
         for (int j = 0; j < width+2; j++) {
             // creates boundary
             if (i == 0 || i == width + 1) {
+                attron(COLOR_PAIR(BLUE_BORDER));
                 mvprintw(i, j, "+");
             } else if (j == 0 || j == height + 1) { 
+                attron(COLOR_PAIR(BLUE_BORDER));
                 mvprintw(i, j, "+");
             }
 
              // Snake head
              else if (i == y && j == x) {
+                attron(COLOR_PAIR(SNAKE_GREEN));
                 mvprintw(i, j, "O");
              }
              // fruit
              else if (i == fruitY && j == fruitX) {
+                attron(COLOR_PAIR(RED_FOOD));
                 mvprintw(i, j, "@");
              }
              // NOT HEAD - but still part of snake
@@ -76,8 +91,10 @@ void Draw()
                  for (int k = 0; k < nTail; k++) 
                  {
                     if (tailX[k] == j && tailY[k] == i)
+                    {
+                        attron(COLOR_PAIR(SNAKE_GREEN));
                         mvprintw(i, j, "o");
-                     
+                    }
                  }
             }
 
@@ -85,6 +102,7 @@ void Draw()
 
     }
     // display score on bottom left
+    attron(COLOR_PAIR(BLUE_BORDER));
     mvprintw(23, 0, "Score %d", score);
 
 
@@ -131,6 +149,15 @@ void Input()
     }
 
 
+}
+
+void PrintWithColor()
+{
+    if (has_colors() == FALSE) {
+        endwin();
+        printf("Your terminal does not support color\n");
+        exit(1);
+    }
 }
 
 void Logic()
